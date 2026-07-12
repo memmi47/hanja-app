@@ -237,6 +237,7 @@
   <div class="cover-glyph">漢字學習</div>
   <div class="cover-title">한자 학습</div>
   <div class="cover-tagline">매일 조금씩, 한자와 친해지기</div>
+  <div class="btn-continue-sub" id="globalFavLink" style="margin-bottom:18px;">★ 즐겨찾기 모아보기</div>
 
   <button class="module-card" id="pickMhj">
     <div class="module-card-title">마법천자문</div>
@@ -332,19 +333,28 @@
     </div>
 
     <div id="g5-sub-word" class="hidden">
+      <div class="filter-row" id="g5wordFilterRow">
+        <button class="filter-btn active" data-filter="all">전체</button>
+        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
+      </div>
       <div class="vol-label-btn" id="g5wordPickBtn" style="width:100%; margin-bottom:14px;">
         <span id="g5wordSetLabel">회차 고르기</span><span class="chev">⌄</span>
       </div>
       <div id="g5wordCardArea" class="hidden">
         <div class="card-wrap">
           <div class="flashcard" id="g5wordFlashcard"></div>
+          <div class="toggle-row">
+            <button class="toggle-btn known" id="g5wordKnownBtn">✓ 이미 알아요</button>
+            <button class="toggle-btn star" id="g5wordStarBtn">★ 즐겨찾기</button>
+          </div>
           <div class="nav-row">
             <button class="btn" id="g5wordPrevBtn">이전</button>
             <button class="btn primary" id="g5wordNextBtn">다음</button>
           </div>
+          <div class="hidden-link hidden" id="g5wordHiddenLink">숨긴 단어 <span id="g5wordHiddenCount">0</span>개 다시 보기</div>
         </div>
       </div>
-      <div class="empty-note" id="g5wordEmptyNote">회차를 고르면 단어 카드가 시작돼요</div>
+      <div class="empty-note hidden" id="g5wordEmptyNote">회차를 고르면 단어 카드가 시작돼요</div>
     </div>
   </div>
 </div>
@@ -370,6 +380,14 @@
   <div class="sheet">
     <h2 id="hiddenTitle">숨긴 카드</h2>
     <div id="hiddenList"></div>
+  </div>
+</div>
+
+<!-- 전체 즐겨찾기 모아보기 -->
+<div class="overlay hidden" id="favOverlay">
+  <div class="sheet">
+    <h2>즐겨찾기 모아보기</h2>
+    <div id="favList"></div>
   </div>
 </div>
 
@@ -524,6 +542,7 @@ document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>{
     const tab = t.dataset.g5tab;
     document.getElementById('g5-sub-char').classList.toggle('hidden', tab!=='char');
     document.getElementById('g5-sub-word').classList.toggle('hidden', tab!=='word');
+    if(tab === 'word') enterG5WordTab();
   });
 });
 document.getElementById('pickMhj').addEventListener('click', enterMhj);
@@ -806,10 +825,31 @@ document.getElementById('g5HiddenLink').addEventListener('click', ()=>{
 });
 
 /* ---------- 5급 단어 학습(기출 한자어 — 회차별 카드 앞/뒷면) ---------- */
-let g5wordItems = []; // 현재 고른 회차의 단어만(원래 순서 그대로)
+let g5wordItems = []; // 현재 고른 회차·필터에서 known=false인 단어만(원래 순서 그대로)
 let g5wordIdx = 0;
 let g5wordFlipped = false;
 let g5wordExamList = null; // 전체 회차 번호 목록(캐시)
+
+function g5wordCtrl(){
+  if(!PROGRESS.g5word) PROGRESS.g5word = {examNumber: null, filter: 'all'};
+  return PROGRESS.g5word;
+}
+
+function g5wordActiveItems(examNumber, filter){
+  let items = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === examNumber && !wordState(it.id).known);
+  if(filter === 'starred') items = items.filter(it => wordState(it.id).starred);
+  return items.sort((a, b) => a.question_number - b.question_number);
+}
+
+async function enterG5WordTab(){
+  await Promise.all([loadGrade5Exam(), loadGrade5()]);
+  if(!g5wordExamList){
+    g5wordExamList = [...new Set(GRADE5_EXAM_ITEMS.map(it => it.exam_number))].sort((a, b) => a - b);
+  }
+  const ctrl = g5wordCtrl();
+  const examNumber = (ctrl.examNumber && g5wordExamList.includes(ctrl.examNumber)) ? ctrl.examNumber : g5wordExamList[0];
+  startG5WordSet(examNumber);
+}
 
 document.getElementById('g5wordPickBtn').addEventListener('click', async ()=>{
   await Promise.all([loadGrade5Exam(), loadGrade5()]);
@@ -831,15 +871,30 @@ document.getElementById('g5wordExamOverlay').addEventListener('click', e=>{
 });
 
 function startG5WordSet(examNumber){
-  g5wordItems = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === examNumber)
-    .sort((a, b) => a.question_number - b.question_number);
+  const ctrl = g5wordCtrl();
+  ctrl.examNumber = examNumber;
+  saveProgress();
   document.getElementById('g5wordSetLabel').textContent = `${examNumber}회`;
-  document.getElementById('g5wordEmptyNote').classList.add('hidden');
-  document.getElementById('g5wordCardArea').classList.remove('hidden');
+  document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === ctrl.filter));
+  g5wordItems = g5wordActiveItems(examNumber, ctrl.filter);
   g5wordIdx = 0;
   g5wordFlipped = false;
   g5wordRenderCard();
 }
+
+function g5wordSetFilter(filter){
+  const ctrl = g5wordCtrl();
+  ctrl.filter = filter;
+  saveProgress();
+  document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  g5wordItems = g5wordActiveItems(ctrl.examNumber, filter);
+  g5wordIdx = 0;
+  g5wordFlipped = false;
+  g5wordRenderCard();
+}
+document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => g5wordSetFilter(btn.dataset.filter));
+});
 
 function g5wordCharBreakdown(word){
   return [...word].map(ch => {
@@ -848,10 +903,30 @@ function g5wordCharBreakdown(word){
   }).join('  ·  ');
 }
 
+function g5wordUpdateHiddenLink(){
+  const ctrl = g5wordCtrl();
+  const hiddenCount = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === ctrl.examNumber && wordState(it.id).known).length;
+  document.getElementById('g5wordHiddenCount').textContent = hiddenCount;
+  document.getElementById('g5wordHiddenLink').classList.toggle('hidden', hiddenCount === 0);
+}
+
 function g5wordRenderCard(){
   const flashcard = document.getElementById('g5wordFlashcard');
-  if(!g5wordItems.length) return;
+  const cardArea = document.getElementById('g5wordCardArea');
+  const emptyNote = document.getElementById('g5wordEmptyNote');
+  g5wordUpdateHiddenLink();
+  if(!g5wordItems.length){
+    cardArea.classList.add('hidden');
+    const ctrl = g5wordCtrl();
+    emptyNote.textContent = ctrl.filter === 'starred' ? '즐겨찾기한 단어가 없어요' : '이 회차 단어를 모두 암기 완료했어요!';
+    emptyNote.classList.remove('hidden');
+    return;
+  }
+  cardArea.classList.remove('hidden');
+  emptyNote.classList.add('hidden');
   const item = g5wordItems[g5wordIdx];
+  const w = wordState(item.id);
+  document.getElementById('g5wordStarBtn').classList.toggle('active', w.starred);
   if(!g5wordFlipped){
     flashcard.innerHTML = `
       <div class="hanja-big">${item.prompt}</div>
@@ -880,6 +955,53 @@ document.getElementById('g5wordNextBtn').addEventListener('click', ()=>{
   g5wordIdx = (g5wordIdx + 1) % g5wordItems.length;
   g5wordFlipped = false;
   g5wordRenderCard();
+});
+document.getElementById('g5wordStarBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const item = g5wordItems[g5wordIdx];
+  if(!item) return;
+  const w = wordState(item.id);
+  w.starred = !w.starred;
+  saveProgress();
+  const ctrl = g5wordCtrl();
+  if(ctrl.filter === 'starred' && !w.starred){
+    g5wordItems.splice(g5wordIdx, 1);
+    if(g5wordIdx >= g5wordItems.length) g5wordIdx = 0;
+  }
+  g5wordRenderCard();
+});
+document.getElementById('g5wordKnownBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const item = g5wordItems[g5wordIdx];
+  if(!item) return;
+  wordState(item.id).known = true;
+  saveProgress();
+  // 암기완료 처리한 단어는 즉시 목록에서 빠진다
+  g5wordItems.splice(g5wordIdx, 1);
+  if(g5wordIdx >= g5wordItems.length) g5wordIdx = 0;
+  g5wordFlipped = false;
+  g5wordRenderCard();
+});
+document.getElementById('g5wordHiddenLink').addEventListener('click', ()=>{
+  const ctrl = g5wordCtrl();
+  const list = document.getElementById('hiddenList');
+  const hidden = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === ctrl.examNumber && wordState(it.id).known);
+  document.getElementById('hiddenTitle').textContent = '숨긴 단어';
+  list.innerHTML = hidden.map(it => `
+    <div class="hidden-card-row" data-id="${it.id}">
+      <div><span class="hidden-card-word">${it.prompt}</span><span class="hidden-card-hanja">${it.expected_answers[0]}</span></div>
+      <button class="restore-btn" data-id="${it.id}">다시 보기</button>
+    </div>`).join('');
+  list.querySelectorAll('.restore-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      wordState(btn.dataset.id).known = false;
+      saveProgress();
+      document.getElementById('hiddenOverlay').classList.add('hidden');
+      g5wordItems = g5wordActiveItems(ctrl.examNumber, ctrl.filter);
+      g5wordRenderCard();
+    });
+  });
+  document.getElementById('hiddenOverlay').classList.remove('hidden');
 });
 
 async function loadAndRender(expectedToken){
@@ -1112,6 +1234,59 @@ function selectAnswer(i, q, optEl){
     renderQuiz();
   }, 700);
 }
+
+/* ---------- 전체 즐겨찾기 모아보기(표지, 마법천자문+5급 전체 통합) ---------- */
+async function openFavOverlay(){
+  const list = document.getElementById('favList');
+  list.innerHTML = '<div class="hint">불러오는 중...</div>';
+  document.getElementById('favOverlay').classList.remove('hidden');
+
+  const starredIds = Object.keys(PROGRESS.words).filter(id => PROGRESS.words[id].starred);
+  const mhjIds = starredIds.filter(id => /^\d{3}-\d+$/.test(id));
+  const g5CharIds = starredIds.filter(id => /^grade5-\d{3}$/.test(id));
+  const g5WordIds = starredIds.filter(id => /^grade5-exam/.test(id));
+
+  const volsNeeded = [...new Set(mhjIds.map(id => parseInt(id.slice(0, 3), 10)))];
+  const volDatas = await Promise.all(volsNeeded.map(v => loadVolume(v)));
+  const mhjCards = [];
+  volDatas.forEach(d => (d.cards || []).forEach(c => { if(mhjIds.includes(c.id)) mhjCards.push(c); }));
+
+  await Promise.all([loadGrade5(), loadGrade5Exam()]);
+  const g5Chars = GRADE5_ENTRIES.filter(e => g5CharIds.includes(e.id));
+  const g5Words = GRADE5_EXAM_ITEMS.filter(it => g5WordIds.includes(it.id));
+
+  const sections = [];
+  if(mhjCards.length) sections.push({title: '마법천자문', rows: mhjCards.map(c => ({id: c.id, main: c.word, sub: c.hanja}))});
+  if(g5Chars.length) sections.push({title: '5급 글자', rows: g5Chars.map(e => ({id: e.id, main: e.hanja, sub: e.reading_meaning}))});
+  if(g5Words.length) sections.push({title: '5급 단어', rows: g5Words.map(it => ({id: it.id, main: it.prompt, sub: it.expected_answers[0]}))});
+
+  if(!sections.length){
+    list.innerHTML = '<div class="hint">아직 즐겨찾기한 게 없어요</div>';
+    return;
+  }
+  list.innerHTML = sections.map(sec => `
+    <h3 style="font-size:13px; color:var(--muted); margin:14px 0 6px;">${sec.title}</h3>
+    ${sec.rows.map(r => `
+      <div class="hidden-card-row" data-id="${r.id}">
+        <div><span class="hidden-card-word">${r.main}</span><span class="hidden-card-hanja">${r.sub}</span></div>
+        <button class="restore-btn unfav-btn" data-id="${r.id}">★ 해제</button>
+      </div>`).join('')}
+  `).join('');
+  list.querySelectorAll('.unfav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      wordState(btn.dataset.id).starred = false;
+      saveProgress();
+      openFavOverlay();
+    });
+  });
+}
+document.getElementById('globalFavLink').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  openFavOverlay();
+});
+document.getElementById('favOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'favOverlay') e.target.classList.add('hidden');
+});
 
 /* ---------- 부모용 백업 (?backup 접속시만 노출) ---------- */
 if(new URLSearchParams(location.search).has('backup')){
