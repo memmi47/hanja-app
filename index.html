@@ -216,15 +216,6 @@
   .g5-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
   .g5-dot.green{background:var(--good);}
   .g5-dot.red{background:var(--bad);}
-
-  /* ===== 5급 기출 독음 쓰기 ===== */
-  .g5exam-prompt{font-size:56px; font-weight:500; text-align:center; padding:10px 0;}
-  .write-input{
-    width:100%; padding:14px 16px; border-radius:14px; border:1px solid var(--line);
-    background:var(--card); color:var(--ink); font-size:20px; text-align:center;
-    margin-bottom:10px;
-  }
-  .write-input:disabled{opacity:.7;}
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -313,11 +304,12 @@
   <!-- 5급 배정한자 -->
   <div class="panel hidden" id="panel-g5">
     <div class="tabbar-row" id="g5TabbarRow">
-      <div class="tabbar-tab active" data-g5tab="study">글자 학습</div>
+      <div class="tabbar-tab active" data-g5tab="char">글자 학습</div>
+      <div class="tabbar-tab" data-g5tab="word">단어 학습</div>
       <div class="tabbar-tab" data-g5tab="exam">기출문제</div>
     </div>
 
-    <div id="g5-sub-study">
+    <div id="g5-sub-char">
       <div class="filter-row" id="g5FilterRow">
         <button class="filter-btn active" data-filter="all">전체</button>
         <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
@@ -328,44 +320,41 @@
           <button class="toggle-btn known" id="g5KnownBtn">✓ 이미 알아요</button>
           <button class="toggle-btn star" id="g5StarBtn">★ 즐겨찾기</button>
         </div>
-        <button class="btn primary" id="g5NextBtn" style="width:100%;">다음</button>
+        <div class="nav-row">
+          <button class="btn" id="g5PrevBtn">이전</button>
+          <button class="btn primary" id="g5NextBtn">다음</button>
+        </div>
         <div class="hidden-link hidden" id="g5HiddenLink">숨긴 한자 <span id="g5HiddenCount">0</span>개 다시 보기</div>
       </div>
     </div>
 
-    <div id="g5-sub-exam" class="hidden">
-      <div class="vol-label-btn" id="g5examPickBtn" style="width:100%; margin-bottom:14px;">
-        <span id="g5examSetLabel">회차·세트 고르기</span><span class="chev">⌄</span>
+    <div id="g5-sub-word" class="hidden">
+      <div class="vol-label-btn" id="g5wordPickBtn" style="width:100%; margin-bottom:14px;">
+        <span id="g5wordSetLabel">회차 고르기</span><span class="chev">⌄</span>
       </div>
-
-      <div id="g5examQuizArea" class="hidden">
-        <div class="quiz-progress" id="g5examProgress"></div>
-        <div class="quiz-stem" id="g5examStemWrap">
-          <div class="quiz-label">한자어를 보고 독음(읽는 법)을 쓰세요</div>
-          <div class="g5exam-prompt" id="g5examPrompt"></div>
+      <div id="g5wordCardArea" class="hidden">
+        <div class="card-wrap">
+          <div class="flashcard" id="g5wordFlashcard"></div>
+          <div class="nav-row">
+            <button class="btn" id="g5wordPrevBtn">이전</button>
+            <button class="btn primary" id="g5wordNextBtn">다음</button>
+          </div>
         </div>
-        <input type="text" id="g5examInput" class="write-input" placeholder="여기에 입력하세요">
-        <button class="btn primary" id="g5examSubmitBtn" style="width:100%;">확인</button>
-        <div id="g5examResult"></div>
       </div>
-      <div class="empty-note" id="g5examEmptyNote">회차와 세트를 고르면 문제가 시작돼요</div>
+      <div class="empty-note" id="g5wordEmptyNote">회차를 고르면 단어 카드가 시작돼요</div>
+    </div>
+
+    <div id="g5-sub-exam" class="hidden">
+      <div class="empty-note" id="g5examEmptyNote">기출문제는 준비 중이에요</div>
     </div>
   </div>
 </div>
 
-<!-- 5급 기출 회차 선택 -->
-<div class="overlay hidden" id="g5examExamOverlay">
+<!-- 5급 단어 학습 회차 선택 -->
+<div class="overlay hidden" id="g5wordExamOverlay">
   <div class="sheet">
     <h2>회차 선택</h2>
-    <div class="vol-grid" id="g5examExamGrid"></div>
-  </div>
-</div>
-
-<!-- 5급 기출 세트(부) 선택 -->
-<div class="overlay hidden" id="g5examPartOverlay">
-  <div class="sheet">
-    <h2 id="g5examPartTitle">세트 선택</h2>
-    <div class="vol-grid" id="g5examPartGrid"></div>
+    <div class="vol-grid" id="g5wordExamGrid"></div>
   </div>
 </div>
 
@@ -525,8 +514,9 @@ function enterG5(){
   document.getElementById('panel-card').classList.add('hidden');
   document.getElementById('panel-quiz').classList.add('hidden');
   document.getElementById('panel-g5').classList.remove('hidden');
-  document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.g5tab==='study'));
-  document.getElementById('g5-sub-study').classList.remove('hidden');
+  document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.g5tab==='char'));
+  document.getElementById('g5-sub-char').classList.remove('hidden');
+  document.getElementById('g5-sub-word').classList.add('hidden');
   document.getElementById('g5-sub-exam').classList.add('hidden');
   loadGrade5().then(()=> g5RenderCard());
 }
@@ -534,9 +524,9 @@ document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(x=>x.classList.toggle('active', x===t));
     const tab = t.dataset.g5tab;
-    document.getElementById('g5-sub-study').classList.toggle('hidden', tab!=='study');
+    document.getElementById('g5-sub-char').classList.toggle('hidden', tab!=='char');
+    document.getElementById('g5-sub-word').classList.toggle('hidden', tab!=='word');
     document.getElementById('g5-sub-exam').classList.toggle('hidden', tab!=='exam');
-    if(tab === 'exam') loadGrade5Exam();
   });
 });
 document.getElementById('pickMhj').addEventListener('click', enterMhj);
@@ -602,14 +592,14 @@ async function gotoVolume(vol){
 }
 
 /* ---------- 탭 전환 ---------- */
-document.querySelectorAll('.tabbar-tab').forEach(t=>{
+document.querySelectorAll('#tabbarRow .tabbar-tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     if(t.classList.contains('disabled')) return;
     activateTab(t.dataset.tab);
   });
 });
 function activateTab(name){
-  document.querySelectorAll('.tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('#tabbarRow .tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
   document.getElementById('panel-card').classList.toggle('hidden', name!=='card');
   document.getElementById('panel-quiz').classList.toggle('hidden', name!=='quiz');
 }
@@ -708,6 +698,7 @@ function g5UpdateHiddenLink(){
   document.getElementById('g5HiddenLink').classList.toggle('hidden', hiddenCount===0);
 }
 
+let g5Flipped = false;
 function g5RenderCard(){
   g5EnsureDeck();
   const st = g5State();
@@ -716,38 +707,55 @@ function g5RenderCard(){
   const entry = GRADE5_ENTRIES.find(e => e.id === st.deck[st.pos]);
   const flashcard = document.getElementById('g5Flashcard');
   const toggleRow = document.querySelector('#panel-g5 .toggle-row');
-  const nextBtn = document.getElementById('g5NextBtn');
   if(!entry){
     toggleRow.classList.add('hidden');
-    nextBtn.classList.add('hidden');
     const msg = st.filter === 'starred' ? '즐겨찾기한 한자가 없어요' : '5급 배정한자를 모두 암기 완료했어요!';
     flashcard.innerHTML = `<div class="hint">${msg}</div>`;
     return;
   }
   toggleRow.classList.remove('hidden');
-  nextBtn.classList.remove('hidden');
   st.lastId = entry.id;
   saveProgress();
   const w = wordState(entry.id);
   document.getElementById('g5StarBtn').classList.toggle('active', w.starred);
-  const modesHtml = entry.study_modes.map(m => {
-    const color = m === 'write' ? 'red' : 'green';
-    const label = m === 'write' ? '쓰기' : '읽기';
-    return `<span class="g5-mode-badge"><span class="g5-dot ${color}"></span>${label}</span>`;
-  }).join('');
-  flashcard.innerHTML = `
-    <div class="hanja-big">${entry.hanja}</div>
-    <div class="reading">${entry.reading_meaning}</div>
-    <div class="g5-modes">${modesHtml}</div>
-    <div class="hint">${st.pos + 1} / ${st.deck.length}</div>
-  `;
+
+  if(!g5Flipped){
+    flashcard.innerHTML = `
+      <div class="hanja-big">${entry.hanja}</div>
+      <div class="hint">${st.pos + 1} / ${st.deck.length} · 탭하면 훈음을 확인해요</div>
+    `;
+  } else {
+    const modesHtml = entry.study_modes.map(m => {
+      const color = m === 'write' ? 'red' : 'green';
+      const label = m === 'write' ? '쓰기' : '읽기';
+      return `<span class="g5-mode-badge"><span class="g5-dot ${color}"></span>${label}</span>`;
+    }).join('');
+    flashcard.innerHTML = `
+      <div class="reading">${entry.reading_meaning}</div>
+      <div class="g5-modes">${modesHtml}</div>
+      <div class="hint">${st.pos + 1} / ${st.deck.length}</div>
+    `;
+  }
 }
+document.getElementById('g5Flashcard').addEventListener('click', ()=>{
+  g5Flipped = !g5Flipped;
+  g5RenderCard();
+});
 document.querySelectorAll('#g5FilterRow .filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => g5SetFilter(btn.dataset.filter));
+  btn.addEventListener('click', () => { g5Flipped = false; g5SetFilter(btn.dataset.filter); });
+});
+document.getElementById('g5PrevBtn').addEventListener('click', () => {
+  const st = g5State();
+  if(!st.deck.length) return;
+  st.pos = (st.pos - 1 + st.deck.length) % st.deck.length;
+  g5Flipped = false;
+  saveProgress();
+  g5RenderCard();
 });
 document.getElementById('g5NextBtn').addEventListener('click', () => {
   const st = g5State();
   st.pos++;
+  g5Flipped = false;
   saveProgress();
   g5RenderCard();
 });
@@ -776,6 +784,7 @@ document.getElementById('g5KnownBtn').addEventListener('click', (e)=>{
   // 암기완료 처리한 한자는 즉시 덱에서 빠진다
   st.deck.splice(st.pos, 1);
   if(st.pos >= st.deck.length) st.pos = 0;
+  g5Flipped = false;
   saveProgress();
   g5RenderCard();
 });
@@ -799,168 +808,73 @@ document.getElementById('g5HiddenLink').addEventListener('click', ()=>{
   document.getElementById('hiddenOverlay').classList.remove('hidden');
 });
 
-/* ---------- 5급 기출 '한자→독음 쓰기' ---------- */
-const G5EXAM_PARTS = [[1, 9], [10, 18], [19, 27], [28, 35]]; // 회차당 35문항을 9문항 내외 4세트로 분할
+/* ---------- 5급 단어 학습(기출 한자어 — 회차별 카드 앞/뒷면) ---------- */
+let g5wordItems = []; // 현재 고른 회차의 단어만(원래 순서 그대로)
+let g5wordIdx = 0;
+let g5wordFlipped = false;
+let g5wordExamList = null; // 전체 회차 번호 목록(캐시)
 
-let g5examItems = []; // 현재 고른 회차·세트의 문항만
-let g5examOrder = [];
-let g5examIdx = 0;
-let g5examScore = 0;
-let g5examAnswered = false;
-let g5examSetKey = null; // "g5exam-{회차}-{세트index}" — 오답 우선 재출제 키
-let g5examExamList = null; // 전체 회차 번호 목록(캐시)
-
-function normalizeAnswer(s){
-  return String(s).replace(/\s+/g, '').trim();
-}
-
-function g5examBuildOrder(){
-  const idxs = g5examItems.map((_, i) => i);
-  const wrongSet = new Set(PROGRESS.words[g5examSetKey]?.wrongIds || []);
-  const shuffled = fisherYates(idxs);
-  shuffled.sort((a, b) => {
-    const aw = wrongSet.has(g5examItems[a].id) ? 0 : 1;
-    const bw = wrongSet.has(g5examItems[b].id) ? 0 : 1;
-    return aw - bw;
-  });
-  return shuffled;
-}
-
-function g5examRecordWrong(itemId, wasWrong){
-  const key = g5examSetKey;
-  if(!PROGRESS.words[key]) PROGRESS.words[key] = {starred: false, known: false, wrongCount: 0, wrongIds: []};
-  const rec = PROGRESS.words[key];
-  if(!rec.wrongIds) rec.wrongIds = [];
-  const has = rec.wrongIds.includes(itemId);
-  if(wasWrong && !has) rec.wrongIds.push(itemId);
-  if(!wasWrong && has) rec.wrongIds = rec.wrongIds.filter(x => x !== itemId);
-}
-
-/* ---- 회차·세트 선택 ---- */
-document.getElementById('g5examPickBtn').addEventListener('click', async ()=>{
+document.getElementById('g5wordPickBtn').addEventListener('click', async ()=>{
   await loadGrade5Exam();
-  if(!g5examExamList){
-    g5examExamList = [...new Set(GRADE5_EXAM_ITEMS.map(it => it.exam_number))].sort((a, b) => a - b);
+  if(!g5wordExamList){
+    g5wordExamList = [...new Set(GRADE5_EXAM_ITEMS.map(it => it.exam_number))].sort((a, b) => a - b);
   }
-  const grid = document.getElementById('g5examExamGrid');
-  grid.innerHTML = g5examExamList.map(n => `<button class="vol-btn" data-exam="${n}">${n}회</button>`).join('');
+  const grid = document.getElementById('g5wordExamGrid');
+  grid.innerHTML = g5wordExamList.map(n => `<button class="vol-btn" data-exam="${n}">${n}회</button>`).join('');
   grid.querySelectorAll('.vol-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.getElementById('g5examExamOverlay').classList.add('hidden');
-      openG5ExamPartPicker(Number(btn.dataset.exam));
+      document.getElementById('g5wordExamOverlay').classList.add('hidden');
+      startG5WordSet(Number(btn.dataset.exam));
     });
   });
-  document.getElementById('g5examExamOverlay').classList.remove('hidden');
+  document.getElementById('g5wordExamOverlay').classList.remove('hidden');
 });
-document.getElementById('g5examExamOverlay').addEventListener('click', e=>{
-  if(e.target.id === 'g5examExamOverlay') e.target.classList.add('hidden');
-});
-
-function openG5ExamPartPicker(examNumber){
-  document.getElementById('g5examPartTitle').textContent = `${examNumber}회 — 세트 선택`;
-  const grid = document.getElementById('g5examPartGrid');
-  grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  grid.innerHTML = G5EXAM_PARTS.map((range, i) => {
-    const count = range[1] - range[0] + 1;
-    return `<button class="vol-btn" data-part="${i}">${i + 1}부 (${range[0]}~${range[1]}번, ${count}문항)</button>`;
-  }).join('');
-  grid.querySelectorAll('.vol-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.getElementById('g5examPartOverlay').classList.add('hidden');
-      startG5ExamSet(examNumber, Number(btn.dataset.part));
-    });
-  });
-  document.getElementById('g5examPartOverlay').classList.remove('hidden');
-}
-document.getElementById('g5examPartOverlay').addEventListener('click', e=>{
-  if(e.target.id === 'g5examPartOverlay') e.target.classList.add('hidden');
+document.getElementById('g5wordExamOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'g5wordExamOverlay') e.target.classList.add('hidden');
 });
 
-function startG5ExamSet(examNumber, partIdx){
-  const [lo, hi] = G5EXAM_PARTS[partIdx];
-  g5examItems = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === examNumber && it.question_number >= lo && it.question_number <= hi);
-  g5examSetKey = `g5exam-${examNumber}-${partIdx}`;
-  document.getElementById('g5examSetLabel').textContent = `${examNumber}회 ${partIdx + 1}부`;
-  document.getElementById('g5examEmptyNote').classList.add('hidden');
-  document.getElementById('g5examQuizArea').classList.remove('hidden');
-  g5examOrder = g5examBuildOrder();
-  g5examIdx = 0; g5examScore = 0; g5examAnswered = false;
-  g5examRenderQuestion();
+function startG5WordSet(examNumber){
+  g5wordItems = GRADE5_EXAM_ITEMS.filter(it => it.exam_number === examNumber)
+    .sort((a, b) => a.question_number - b.question_number);
+  document.getElementById('g5wordSetLabel').textContent = `${examNumber}회`;
+  document.getElementById('g5wordEmptyNote').classList.add('hidden');
+  document.getElementById('g5wordCardArea').classList.remove('hidden');
+  g5wordIdx = 0;
+  g5wordFlipped = false;
+  g5wordRenderCard();
 }
 
-function g5examRenderQuestion(){
-  const stemWrap = document.getElementById('g5examStemWrap');
-  const input = document.getElementById('g5examInput');
-  const submitBtn = document.getElementById('g5examSubmitBtn');
-  const resultEl = document.getElementById('g5examResult');
-  resultEl.innerHTML = '';
-
-  if(g5examIdx >= g5examOrder.length){
-    document.getElementById('g5examProgress').textContent = '';
-    stemWrap.classList.add('hidden');
-    input.classList.add('hidden');
-    submitBtn.classList.add('hidden');
-    resultEl.innerHTML = `
-      <div class="result-banner">
-        <div class="result-score">${g5examScore} / ${g5examOrder.length}</div>
-        <div>수고했어요! 다시 풀어볼까요?</div>
-        <div class="nav-row" style="margin-top:16px;">
-          <button class="btn primary" id="g5examRetryBtn">다시 풀기</button>
-        </div>
-      </div>`;
-    document.getElementById('g5examRetryBtn').addEventListener('click', ()=>{
-      g5examOrder = g5examBuildOrder();
-      g5examIdx = 0; g5examScore = 0; g5examAnswered = false;
-      stemWrap.classList.remove('hidden');
-      input.classList.remove('hidden');
-      submitBtn.classList.remove('hidden');
-      g5examRenderQuestion();
-    });
-    return;
+function g5wordRenderCard(){
+  const flashcard = document.getElementById('g5wordFlashcard');
+  if(!g5wordItems.length) return;
+  const item = g5wordItems[g5wordIdx];
+  if(!g5wordFlipped){
+    flashcard.innerHTML = `
+      <div class="hanja-big">${item.prompt}</div>
+      <div class="hint">${g5wordIdx + 1} / ${g5wordItems.length} · 탭하면 독음을 확인해요</div>
+    `;
+  } else {
+    flashcard.innerHTML = `
+      <div class="reading" style="font-size:24px;">${item.expected_answers[0]}</div>
+      <div class="hint">${g5wordIdx + 1} / ${g5wordItems.length}</div>
+    `;
   }
-
-  stemWrap.classList.remove('hidden');
-  input.classList.remove('hidden');
-  submitBtn.classList.remove('hidden');
-  submitBtn.textContent = '확인';
-  input.value = '';
-  input.disabled = false;
-  g5examAnswered = false;
-  const item = g5examItems[g5examOrder[g5examIdx]];
-  document.getElementById('g5examProgress').textContent = `${g5examIdx + 1} / ${g5examOrder.length}   ·   맞은 개수 ${g5examScore}`;
-  document.getElementById('g5examPrompt').textContent = item.prompt;
-  input.focus();
 }
-
-function g5examCheck(){
-  if(g5examAnswered || g5examIdx >= g5examOrder.length) return;
-  const item = g5examItems[g5examOrder[g5examIdx]];
-  const input = document.getElementById('g5examInput');
-  const userAns = normalizeAnswer(input.value);
-  const correct = item.expected_answers.some(a => normalizeAnswer(a) === userAns);
-  g5examAnswered = true;
-  input.disabled = true;
-  if(correct) g5examScore++;
-  g5examRecordWrong(item.id, !correct);
-  saveProgress();
-
-  document.getElementById('g5examResult').innerHTML = `
-    <div class="result-banner" style="padding:20px;">
-      <div style="font-size:17px; font-weight:800; color:${correct ? 'var(--good)' : 'var(--bad)'};">
-        ${correct ? '정답이에요!' : '아쉬워요'}
-      </div>
-      ${!correct ? `<div style="margin-top:8px;">정답: ${item.expected_answers[0]}</div>` : ''}
-      <button class="btn primary" id="g5examNextBtn" style="width:100%; margin-top:14px;">다음</button>
-    </div>`;
-  document.getElementById('g5examNextBtn').addEventListener('click', ()=>{
-    g5examIdx++;
-    g5examRenderQuestion();
-  });
-}
-
-document.getElementById('g5examSubmitBtn').addEventListener('click', g5examCheck);
-document.getElementById('g5examInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') g5examCheck();
+document.getElementById('g5wordFlashcard').addEventListener('click', ()=>{
+  g5wordFlipped = !g5wordFlipped;
+  g5wordRenderCard();
+});
+document.getElementById('g5wordPrevBtn').addEventListener('click', ()=>{
+  if(!g5wordItems.length) return;
+  g5wordIdx = (g5wordIdx - 1 + g5wordItems.length) % g5wordItems.length;
+  g5wordFlipped = false;
+  g5wordRenderCard();
+});
+document.getElementById('g5wordNextBtn').addEventListener('click', ()=>{
+  if(!g5wordItems.length) return;
+  g5wordIdx = (g5wordIdx + 1) % g5wordItems.length;
+  g5wordFlipped = false;
+  g5wordRenderCard();
 });
 
 async function loadAndRender(expectedToken){
