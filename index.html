@@ -747,7 +747,7 @@ function g5RenderCard(){
       return `<span class="g5-mode-badge"><span class="g5-dot ${color}"></span>${label}</span>`;
     }).join('');
     flashcard.innerHTML = `
-      <div class="reading">${entry.reading_meaning}</div>
+      <div class="word-big">${entry.reading_meaning}</div>
       <div class="g5-modes">${modesHtml}</div>
       <div class="hint">${st.pos + 1} / ${st.deck.length}</div>
     `;
@@ -934,8 +934,8 @@ function g5wordRenderCard(){
     `;
   } else {
     flashcard.innerHTML = `
-      <div class="reading" style="font-size:24px;">${item.expected_answers[0]}</div>
-      <div class="related">${g5wordCharBreakdown(item.prompt)}</div>
+      <div class="word-big">${item.expected_answers[0]}</div>
+      <div class="definition">${g5wordCharBreakdown(item.prompt)}</div>
       <div class="hint">${g5wordIdx + 1} / ${g5wordItems.length}</div>
     `;
   }
