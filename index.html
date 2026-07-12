@@ -38,7 +38,11 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   body{
     margin:0; font-family:-apple-system,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-    background:var(--bg); color:var(--ink); min-height:100vh;
+    background:var(--bg); color:var(--ink);
+    /* 100vh는 iOS Safari에서 주소창이 접히고 펼쳐질 때마다 값이 바뀌어 화면이
+       탭할 때마다 조금씩 밀리는 원인이 된다. 지원 브라우저에서는 뒤에 오는
+       100dvh(현재 실제 보이는 뷰포트 기준)가 이를 덮어써 안정된다. */
+    min-height:100vh; min-height:100dvh;
     display:flex; flex-direction:column; align-items:center; padding:16px 16px 50px;
   }
   .hidden{display:none !important;}
@@ -47,7 +51,7 @@
   /* ===== 진입(표지) 화면 ===== */
   #screen-entry{
     flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:80vh; text-align:center;
+    min-height:80vh; min-height:80dvh; text-align:center;
   }
   .cover-glyph{font-size:64px; font-weight:500; line-height:1; margin-bottom:8px;}
   .cover-title{font-size:16px; font-weight:800; margin-bottom:4px;}
@@ -306,7 +310,6 @@
     <div class="tabbar-row" id="g5TabbarRow">
       <div class="tabbar-tab active" data-g5tab="char">글자 학습</div>
       <div class="tabbar-tab" data-g5tab="word">단어 학습</div>
-      <div class="tabbar-tab" data-g5tab="exam">기출문제</div>
     </div>
 
     <div id="g5-sub-char">
@@ -342,10 +345,6 @@
         </div>
       </div>
       <div class="empty-note" id="g5wordEmptyNote">회차를 고르면 단어 카드가 시작돼요</div>
-    </div>
-
-    <div id="g5-sub-exam" class="hidden">
-      <div class="empty-note" id="g5examEmptyNote">기출문제는 준비 중이에요</div>
     </div>
   </div>
 </div>
@@ -517,7 +516,6 @@ function enterG5(){
   document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.g5tab==='char'));
   document.getElementById('g5-sub-char').classList.remove('hidden');
   document.getElementById('g5-sub-word').classList.add('hidden');
-  document.getElementById('g5-sub-exam').classList.add('hidden');
   loadGrade5().then(()=> g5RenderCard());
 }
 document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>{
@@ -526,7 +524,6 @@ document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>{
     const tab = t.dataset.g5tab;
     document.getElementById('g5-sub-char').classList.toggle('hidden', tab!=='char');
     document.getElementById('g5-sub-word').classList.toggle('hidden', tab!=='word');
-    document.getElementById('g5-sub-exam').classList.toggle('hidden', tab!=='exam');
   });
 });
 document.getElementById('pickMhj').addEventListener('click', enterMhj);
@@ -815,7 +812,7 @@ let g5wordFlipped = false;
 let g5wordExamList = null; // 전체 회차 번호 목록(캐시)
 
 document.getElementById('g5wordPickBtn').addEventListener('click', async ()=>{
-  await loadGrade5Exam();
+  await Promise.all([loadGrade5Exam(), loadGrade5()]);
   if(!g5wordExamList){
     g5wordExamList = [...new Set(GRADE5_EXAM_ITEMS.map(it => it.exam_number))].sort((a, b) => a - b);
   }
@@ -844,6 +841,13 @@ function startG5WordSet(examNumber){
   g5wordRenderCard();
 }
 
+function g5wordCharBreakdown(word){
+  return [...word].map(ch => {
+    const found = GRADE5_ENTRIES && GRADE5_ENTRIES.find(e => e.hanja === ch);
+    return found ? `${ch} ${found.reading_meaning}` : ch;
+  }).join('  ·  ');
+}
+
 function g5wordRenderCard(){
   const flashcard = document.getElementById('g5wordFlashcard');
   if(!g5wordItems.length) return;
@@ -856,6 +860,7 @@ function g5wordRenderCard(){
   } else {
     flashcard.innerHTML = `
       <div class="reading" style="font-size:24px;">${item.expected_answers[0]}</div>
+      <div class="related">${g5wordCharBreakdown(item.prompt)}</div>
       <div class="hint">${g5wordIdx + 1} / ${g5wordItems.length}</div>
     `;
   }
