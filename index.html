@@ -50,11 +50,18 @@
   .hidden{display:none !important;}
   .screen{width:100%; max-width:480px;}
 
-  /* ===== 진입(표지) 화면 ===== */
-  #screen-entry{
-    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:80vh; min-height:80dvh; text-align:center;
+  /* ===== 진입(표지)·학습 화면 공통 세로 배치 =====
+     justify-content:center만 쓰면 창을 아주 짧게 줄였을 때 내용이 위쪽 밖으로
+     넘치며 상단 여백이 0에 가까워질 수 있다(글자가 화면 끝에 닿는 문제).
+     대신 padding-top으로 최소 여백을 확정하고, 내부 wrap(.screen-center-wrap)에
+     margin:auto 0을 줘서 남는 공간만 위아래로 나눈다 — auto 마진은 음수가 될 수
+     없어 내용이 넘칠 때도 이 padding-top 아래로는 절대 밀려 올라가지 않는다. */
+  #screen-entry, #screen-study{
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    min-height:80vh; min-height:80dvh; padding-top:28px;
   }
+  #screen-entry{text-align:center;}
+  .screen-center-wrap{width:100%; display:flex; flex-direction:column; align-items:center; margin-top:auto; margin-bottom:auto;}
   .cover-glyph{font-size:64px; font-weight:500; line-height:1; margin-bottom:8px;}
   .cover-title{font-size:16px; font-weight:800; margin-bottom:4px;}
   .cover-tagline{font-size:13px; color:var(--muted); margin-bottom:28px;}
@@ -260,6 +267,7 @@
 
 <!-- ===== 진입(표지) 화면 ===== -->
 <div class="screen" id="screen-entry">
+  <div class="screen-center-wrap">
   <div class="cover-glyph">漢字學習</div>
   <div class="cover-title">한자 학습</div>
   <div class="cover-tagline">매일 조금씩, 한자와 친해지기</div>
@@ -291,10 +299,12 @@
     <div class="module-card-cta" id="mhjContinueText">이어하기 · 33권</div>
   </button>
   <div class="btn-continue-sub" id="chooseVolLink">다른 권 고르기</div>
+  </div>
 </div>
 
 <!-- ===== 학습 화면 ===== -->
 <div class="screen hidden" id="screen-study">
+  <div class="screen-center-wrap">
   <div class="back-link" id="backLink">‹ 표지</div>
 
   <div class="vol-nav accent-mhj" id="volNav">
@@ -491,6 +501,7 @@
       </div>
       <div class="empty-note hidden" id="g6iiwordEmptyNote">회차를 고르면 단어 카드가 시작돼요</div>
     </div>
+  </div>
   </div>
 </div>
 
