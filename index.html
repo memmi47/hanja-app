@@ -63,8 +63,12 @@
     border-radius:14px; padding:14px 16px; margin-bottom:18px;
   }
   .cover-progress-row{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:8px;}
-  .cover-progress-track{height:7px; background:var(--line); border-radius:4px; overflow:hidden;}
-  .cover-progress-fill{height:100%; background:var(--accent); border-radius:4px;}
+  .cover-progress-track{height:7px; background:var(--line); border-radius:4px; overflow:hidden; position:relative;}
+  .cover-progress-fill{height:100%; border-radius:4px; position:absolute; left:0; top:0;}
+  .cover-progress-fill-seen{background:color-mix(in srgb, var(--accent) 35%, var(--line)); z-index:1;}
+  .cover-progress-fill-known{background:var(--accent); z-index:2;}
+  .progress-seen-num{color:color-mix(in srgb, var(--accent) 55%, var(--muted));}
+  .progress-known-num{color:var(--accent); font-weight:700;}
   .btn-continue{
     width:100%; max-width:280px; padding:15px; border-radius:14px; border:none;
     background:var(--accent); color:var(--accent-text); font-size:16px; font-weight:800; cursor:pointer;
@@ -270,14 +274,20 @@
     <div class="module-card-title" id="gradeTitle">5급 배정한자</div>
     <div class="module-card-sub" id="gradeSub">500자 · 읽기·쓰기 학습</div>
     <div class="cover-progress-row"><span>학습 완료</span><span id="gradeProgressText">0 / 500</span></div>
-    <div class="cover-progress-track"><div class="cover-progress-fill" id="gradeProgressFill" style="width:0%"></div></div>
+    <div class="cover-progress-track">
+      <div class="cover-progress-fill cover-progress-fill-seen" id="gradeProgressFillSeen" style="width:0%"></div>
+      <div class="cover-progress-fill cover-progress-fill-known" id="gradeProgressFillKnown" style="width:0%"></div>
+    </div>
     <div class="module-card-cta" id="gradeContinueText">시작하기</div>
   </button>
 
   <button class="module-card accent-mhj" id="pickMhj">
     <div class="module-card-title">마법천자문</div>
     <div class="cover-progress-row"><span>배운 한자</span><span id="coverProgressText">0 / 560</span></div>
-    <div class="cover-progress-track"><div class="cover-progress-fill" id="coverProgressFill" style="width:0%"></div></div>
+    <div class="cover-progress-track">
+      <div class="cover-progress-fill cover-progress-fill-seen" id="coverProgressFillSeen" style="width:0%"></div>
+      <div class="cover-progress-fill cover-progress-fill-known" id="coverProgressFillKnown" style="width:0%"></div>
+    </div>
     <div class="module-card-cta" id="mhjContinueText">이어하기 · 33권</div>
   </button>
   <div class="btn-continue-sub" id="chooseVolLink">다른 권 고르기</div>
@@ -575,10 +585,30 @@ function wordState(id){
   return PROGRESS.words[id];
 }
 
+// 카드를 화면에 띄운 시점(앞면 노출)에 "한번 봄"으로 기록한다.
+// "이미 알아요"(known)와 별개 지표라 카드학습/글자학습 렌더 함수에서 각각 호출한다.
+function markSeen(id){
+  const w = wordState(id);
+  if(!w.seen){
+    w.seen = true;
+    saveProgress();
+  }
+}
+
 function countKnownTotal(){
   let n = 0;
   for(const id in PROGRESS.words){
     if(/^\d{3}-\d+$/.test(id) && PROGRESS.words[id].known) n++;
+  }
+  return n;
+}
+
+// "본" 카운트 = seen이지만 아직 known은 아닌 것(진행 중, 연한색으로 별도 표시).
+function countSeenOnlyTotal(){
+  let n = 0;
+  for(const id in PROGRESS.words){
+    const w = PROGRESS.words[id];
+    if(/^\d{3}-\d+$/.test(id) && w.seen && !w.known) n++;
   }
   return n;
 }
@@ -592,6 +622,15 @@ function countG5KnownTotal(){
   return n;
 }
 
+function countG5SeenOnlyTotal(){
+  let n = 0;
+  for(const id in PROGRESS.words){
+    const w = PROGRESS.words[id];
+    if(/^grade5-\d{3}$/.test(id) && w.seen && !w.known) n++;
+  }
+  return n;
+}
+
 function countG6KnownTotal(){
   let n = 0;
   for(const id in PROGRESS.words){
@@ -601,10 +640,28 @@ function countG6KnownTotal(){
   return n;
 }
 
+function countG6SeenOnlyTotal(){
+  let n = 0;
+  for(const id in PROGRESS.words){
+    const w = PROGRESS.words[id];
+    if(/^grade6-\d{3}$/.test(id) && w.seen && !w.known) n++;
+  }
+  return n;
+}
+
 function countG6iiKnownTotal(){
   let n = 0;
   for(const id in PROGRESS.words){
     if(/^grade6-ii-\d{3}$/.test(id) && PROGRESS.words[id].known) n++;
+  }
+  return n;
+}
+
+function countG6iiSeenOnlyTotal(){
+  let n = 0;
+  for(const id in PROGRESS.words){
+    const w = PROGRESS.words[id];
+    if(/^grade6-ii-\d{3}$/.test(id) && w.seen && !w.known) n++;
   }
   return n;
 }
@@ -703,9 +760,9 @@ let cardFilter = 'all'; // 'all' | 'starred' — 마법천자문 카드 학습 �
 // 나중에 6급II 등을 추가할 때는 이 목록에 항목만 추가하면 표지의 급수 전환
 // 버튼·카드가 자동으로 늘어난다.
 const GRADE_MODULES = {
-  g5: {label: '5급', sub: '500자 · 읽기·쓰기 학습', total: () => TOTAL_G5, known: () => countG5KnownTotal(), visited: () => PROGRESS.g5Visited, enter: () => enterG5()},
-  g6: {label: '6급', sub: '300자 · 읽기·쓰기 학습', total: () => TOTAL_G6, known: () => countG6KnownTotal(), visited: () => PROGRESS.g6Visited, enter: () => enterG6()},
-  g6ii: {label: '6급II', sub: '225자 · 읽기·쓰기 학습', total: () => TOTAL_G6II, known: () => countG6iiKnownTotal(), visited: () => PROGRESS.g6iiVisited, enter: () => enterG6ii()},
+  g5: {label: '5급', sub: '500자 · 읽기·쓰기 학습', total: () => TOTAL_G5, known: () => countG5KnownTotal(), seenOnly: () => countG5SeenOnlyTotal(), visited: () => PROGRESS.g5Visited, enter: () => enterG5()},
+  g6: {label: '6급', sub: '300자 · 읽기·쓰기 학습', total: () => TOTAL_G6, known: () => countG6KnownTotal(), seenOnly: () => countG6SeenOnlyTotal(), visited: () => PROGRESS.g6Visited, enter: () => enterG6()},
+  g6ii: {label: '6급II', sub: '225자 · 읽기·쓰기 학습', total: () => TOTAL_G6II, known: () => countG6iiKnownTotal(), seenOnly: () => countG6iiSeenOnlyTotal(), visited: () => PROGRESS.g6iiVisited, enter: () => enterG6ii()},
 };
 
 function renderGradeCard(){
@@ -715,10 +772,14 @@ function renderGradeCard(){
   document.getElementById('gradeTitle').textContent = `${mod.label} 배정한자`;
   document.getElementById('gradeSub').textContent = mod.sub;
   const known = mod.known();
+  const seenOnly = mod.seenOnly();
   const total = mod.total();
-  const pct = Math.round(known / total * 100);
-  document.getElementById('gradeProgressText').textContent = `${known} / ${total}`;
-  document.getElementById('gradeProgressFill').style.width = pct + '%';
+  const knownPct = Math.round(known / total * 100);
+  const seenPct = Math.round((known + seenOnly) / total * 100);
+  document.getElementById('gradeProgressText').innerHTML =
+    `<span class="progress-seen-num">본 ${seenOnly}</span> · <span class="progress-known-num">완료 ${known}</span> / ${total}`;
+  document.getElementById('gradeProgressFillSeen').style.width = seenPct + '%';
+  document.getElementById('gradeProgressFillKnown').style.width = knownPct + '%';
   document.getElementById('gradeContinueText').textContent = mod.visited() ? '이어하기' : '시작하기';
 }
 document.querySelectorAll('#gradeSwitch .grade-switch-btn').forEach(btn => {
@@ -735,9 +796,13 @@ document.getElementById('pickGrade').addEventListener('click', () => {
 
 function renderEntry(){
   const known = countKnownTotal();
-  const pct = Math.round(known / TOTAL_CARDS * 100);
-  document.getElementById('coverProgressText').textContent = `${known} / ${TOTAL_CARDS}`;
-  document.getElementById('coverProgressFill').style.width = pct + '%';
+  const seenOnly = countSeenOnlyTotal();
+  const knownPct = Math.round(known / TOTAL_CARDS * 100);
+  const seenPct = Math.round((known + seenOnly) / TOTAL_CARDS * 100);
+  document.getElementById('coverProgressText').innerHTML =
+    `<span class="progress-seen-num">본 ${seenOnly}</span> · <span class="progress-known-num">완료 ${known}</span> / ${TOTAL_CARDS}`;
+  document.getElementById('coverProgressFillSeen').style.width = seenPct + '%';
+  document.getElementById('coverProgressFillKnown').style.width = knownPct + '%';
   const mhjLabel = PROGRESS.mhjVisited ? '이어하기' : '시작하기';
   document.getElementById('mhjContinueText').textContent = `${mhjLabel} · ${currentVol}권`;
   renderGradeCard();
@@ -1018,6 +1083,7 @@ function g5RenderCard(){
   st.lastId = entry.id;
   saveProgress();
   const w = wordState(entry.id);
+  markSeen(entry.id);
   document.getElementById('g5StarBtn').classList.toggle('active', w.starred);
 
   if(!g5Flipped){
@@ -1172,6 +1238,7 @@ function g6RenderCard(){
   st.lastId = entry.id;
   saveProgress();
   const w = wordState(entry.id);
+  markSeen(entry.id);
   document.getElementById('g6StarBtn').classList.toggle('active', w.starred);
 
   if(!g6Flipped){
@@ -1326,6 +1393,7 @@ function g6iiRenderCard(){
   st.lastId = entry.id;
   saveProgress();
   const w = wordState(entry.id);
+  markSeen(entry.id);
   document.getElementById('g6iiStarBtn').classList.toggle('active', w.starred);
 
   if(!g6iiFlipped){
@@ -2046,6 +2114,7 @@ function renderCard(){
   const el = document.getElementById('flashcard');
 
   const w = wordState(c.id);
+  markSeen(c.id);
   document.getElementById('starBtn').classList.toggle('active', w.starred);
   document.getElementById('starBtn').classList.toggle('star', true);
   document.getElementById('knownBtn').classList.toggle('active', w.known);
