@@ -37,7 +37,7 @@
     background:var(--card); color:var(--ink); font-size:12px; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
   }
-  .writing-mode-toggle{top:12px; right:44px; width:24px; height:24px; font-size:10px; opacity:.55;}
+  .writing-mode-toggle{right:44px; font-size:10px; opacity:.55;}
   .writing-mode-toggle.active{opacity:1;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   body{
@@ -65,7 +65,6 @@
   #screen-entry{text-align:center;}
   .screen-center-wrap{width:100%; display:flex; flex-direction:column; align-items:center; margin-top:auto; margin-bottom:auto;}
   .cover-glyph{font-size:64px; font-weight:500; line-height:1; margin-bottom:8px;}
-  .cover-title{font-size:16px; font-weight:800; margin-bottom:4px;}
   .cover-tagline{font-size:13px; color:var(--muted); margin-bottom:28px;}
   .cover-progress{
     width:100%; max-width:280px; background:var(--card); border:1px solid var(--line);
@@ -111,6 +110,16 @@
   .tabbar-row{
     display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden;
     font-size:13px; font-weight:700; margin-bottom:16px; width:100%; max-width:480px;
+  }
+  .study-tab-controls{display:flex; gap:8px; width:100%; max-width:480px; margin-bottom:16px;}
+  .study-tab-controls .tabbar-row{flex:1; margin-bottom:0;}
+  .favorite-filter-toggle{
+    flex:0 0 42px; border:1px solid var(--line); border-radius:10px; background:var(--card);
+    color:var(--muted); font-size:18px; cursor:pointer;
+  }
+  .favorite-filter-toggle.active{
+    color:var(--accent); border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 12%, var(--card));
   }
   .tabbar-tab{
     flex:1; text-align:center; padding:9px 4px; cursor:pointer; color:var(--muted); background:var(--card);
@@ -219,8 +228,10 @@
     border:1px solid var(--line); border-radius:12px; background:var(--card);
     color:var(--ink); font-size:13px; font-weight:700; cursor:pointer;
   }
-  .search-launch.cover{max-width:280px; margin-bottom:14px;}
-  .search-launch.accent-mhj{color:var(--accent); border-color:var(--accent);}
+  .cover-search-controls{display:flex; gap:8px; width:100%; max-width:280px; margin-bottom:14px;}
+  .cover-search-controls .search-launch.cover{flex:1; width:auto; margin-bottom:0;}
+  .cover-search-controls .favorite-filter-toggle{flex-basis:42px;}
+  .search-launch.study-search{color:var(--accent); border-color:var(--accent);}
   .search-sheet{max-height:82vh; display:flex; flex-direction:column; overflow:hidden;}
   .search-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
   .search-head h2{margin:0;}
@@ -246,13 +257,6 @@
 
   .backup-row{display:flex; gap:10px; margin-top:16px; width:100%; max-width:480px;}
 
-  /* ===== 필터 행(카드 학습 전체/즐겨찾기, 5급 전체/쓰기/읽기/즐겨찾기) ===== */
-  .filter-row{display:flex; gap:8px; width:100%; max-width:480px; margin-bottom:14px;}
-  .filter-btn{
-    flex:1; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--card);
-    color:var(--muted); font-size:13px; font-weight:700; cursor:pointer;
-  }
-  .filter-btn.active{background:var(--accent); color:var(--accent-text); border-color:var(--accent);}
   .grade-switch{display:flex; gap:8px; width:100%; max-width:280px; margin-bottom:10px;}
   .grade-switch-btn{
     flex:1; padding:8px; border-radius:10px; border:1px solid var(--line); background:var(--card);
@@ -303,10 +307,11 @@
 <div class="screen" id="screen-entry">
   <div class="screen-center-wrap">
   <div class="cover-glyph">漢字學習</div>
-  <div class="cover-title">한자 학습</div>
   <div class="cover-tagline">매일 조금씩, 한자와 친해지기</div>
-  <button class="search-launch cover" id="globalSearchBtn">⌕ 전체 한자·단어 검색</button>
-  <div class="btn-continue-sub" id="globalFavLink" style="margin-bottom:18px;">★ 즐겨찾기 모아보기</div>
+  <div class="cover-search-controls">
+    <button class="search-launch cover" id="globalSearchBtn">⌕ 전체 한자·단어 검색</button>
+    <button class="favorite-filter-toggle" id="globalFavLink" aria-label="즐겨찾기 모아보기">★</button>
+  </div>
 
   <div class="grade-switch" id="gradeSwitch">
     <button class="grade-switch-btn active" data-grade="g5">5급</button>
@@ -341,7 +346,7 @@
 <div class="screen hidden" id="screen-study">
   <div class="screen-center-wrap">
   <div class="back-link" id="backLink">‹ 표지</div>
-  <button class="search-launch" id="studySearchBtn" data-scope="mhj">⌕ 마법천자문에서 검색</button>
+  <button class="search-launch study-search accent-mhj" id="studySearchBtn" data-scope="mhj">⌕ 마법천자문에서 검색</button>
 
   <div class="vol-nav accent-mhj" id="volNav">
     <button class="vol-arrow" id="volPrev">‹</button>
@@ -349,17 +354,16 @@
     <button class="vol-arrow" id="volNext">›</button>
   </div>
 
-  <div class="tabbar-row accent-mhj" id="tabbarRow">
-    <div class="tabbar-tab active" data-tab="card" id="tabCard">카드</div>
-    <div class="tabbar-tab" data-tab="quiz" id="tabQuiz">퀴즈</div>
+  <div class="study-tab-controls accent-mhj" id="mhjTabControls">
+    <div class="tabbar-row" id="tabbarRow">
+      <div class="tabbar-tab active" data-tab="card" id="tabCard">카드</div>
+      <div class="tabbar-tab" data-tab="quiz" id="tabQuiz">퀴즈</div>
+    </div>
+    <button class="favorite-filter-toggle" id="mhjFavoriteFilterBtn" aria-label="즐겨찾기만 보기" aria-pressed="false">★</button>
   </div>
 
   <!-- 카드 학습 -->
   <div class="panel accent-mhj" id="panel-card">
-    <div class="filter-row" id="cardFilterRow">
-      <button class="filter-btn active" data-filter="all">전체</button>
-      <button class="filter-btn" data-filter="starred">★ 즐겨찾기만</button>
-    </div>
     <div class="card-wrap" id="cardWrap">
       <div class="flashcard" id="flashcard"></div>
       <div class="toggle-row">
@@ -391,15 +395,14 @@
 
   <!-- 5급 배정한자 -->
   <div class="panel hidden" id="panel-g5">
-    <div class="tabbar-row" id="g5TabbarRow">
-      <div class="tabbar-tab active" data-g5tab="char">글자 학습</div>
-      <div class="tabbar-tab" data-g5tab="word">단어 학습</div>
+    <div class="study-tab-controls">
+      <div class="tabbar-row" id="g5TabbarRow">
+        <div class="tabbar-tab active" data-g5tab="char">글자 학습</div>
+        <div class="tabbar-tab" data-g5tab="word">단어 학습</div>
+      </div>
+      <button class="favorite-filter-toggle" id="g5FavoriteFilterBtn" aria-label="즐겨찾기만 보기" aria-pressed="false">★</button>
     </div>
     <div id="g5-sub-char">
-      <div class="filter-row" id="g5FilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="card-wrap">
         <div class="flashcard" id="g5Flashcard"></div>
         <div class="toggle-row">
@@ -415,10 +418,6 @@
     </div>
 
     <div id="g5-sub-word" class="hidden">
-      <div class="filter-row" id="g5wordFilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="vol-label-btn" id="g5wordPickBtn" style="width:100%; margin-bottom:14px;">
         <span id="g5wordSetLabel">회차 고르기</span><span class="chev">⌄</span>
       </div>
@@ -441,15 +440,14 @@
   </div>
 
   <div class="panel hidden" id="panel-g6">
-    <div class="tabbar-row" id="g6TabbarRow">
-      <div class="tabbar-tab active" data-g6tab="char">글자 학습</div>
-      <div class="tabbar-tab" data-g6tab="word">단어 학습</div>
+    <div class="study-tab-controls">
+      <div class="tabbar-row" id="g6TabbarRow">
+        <div class="tabbar-tab active" data-g6tab="char">글자 학습</div>
+        <div class="tabbar-tab" data-g6tab="word">단어 학습</div>
+      </div>
+      <button class="favorite-filter-toggle" id="g6FavoriteFilterBtn" aria-label="즐겨찾기만 보기" aria-pressed="false">★</button>
     </div>
     <div id="g6-sub-char">
-      <div class="filter-row" id="g6FilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="card-wrap">
         <div class="flashcard" id="g6Flashcard"></div>
         <div class="toggle-row">
@@ -464,10 +462,6 @@
       </div>
     </div>
     <div id="g6-sub-word" class="hidden">
-      <div class="filter-row" id="g6wordFilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="vol-label-btn" id="g6wordPickBtn" style="width:100%; margin-bottom:14px;">
         <span id="g6wordSetLabel">회차 고르기</span><span class="chev">⌄</span>
       </div>
@@ -490,15 +484,14 @@
   </div>
 
   <div class="panel hidden" id="panel-g6ii">
-    <div class="tabbar-row" id="g6iiTabbarRow">
-      <div class="tabbar-tab active" data-g6iitab="char">글자 학습</div>
-      <div class="tabbar-tab" data-g6iitab="word">단어 학습</div>
+    <div class="study-tab-controls">
+      <div class="tabbar-row" id="g6iiTabbarRow">
+        <div class="tabbar-tab active" data-g6iitab="char">글자 학습</div>
+        <div class="tabbar-tab" data-g6iitab="word">단어 학습</div>
+      </div>
+      <button class="favorite-filter-toggle" id="g6iiFavoriteFilterBtn" aria-label="즐겨찾기만 보기" aria-pressed="false">★</button>
     </div>
     <div id="g6ii-sub-char">
-      <div class="filter-row" id="g6iiFilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="card-wrap">
         <div class="flashcard" id="g6iiFlashcard"></div>
         <div class="toggle-row">
@@ -513,10 +506,6 @@
       </div>
     </div>
     <div id="g6ii-sub-word" class="hidden">
-      <div class="filter-row" id="g6iiwordFilterRow">
-        <button class="filter-btn active" data-filter="all">전체</button>
-        <button class="filter-btn" data-filter="starred">★ 즐겨찾기</button>
-      </div>
       <div class="vol-label-btn" id="g6iiwordPickBtn" style="width:100%; margin-bottom:14px;">
         <span id="g6iiwordSetLabel">회차 고르기</span><span class="chev">⌄</span>
       </div>
@@ -873,6 +862,19 @@ function setStudySearch(scope){
   button.textContent = labels[scope];
   button.classList.toggle('accent-mhj', scope === 'mhj');
 }
+function syncFavoriteFilterToggle(buttonId, filter){
+  const button = document.getElementById(buttonId);
+  const active = filter === 'starred';
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', String(active));
+  button.setAttribute('aria-label', active ? '전체 보기' : '즐겨찾기만 보기');
+}
+function syncGradeFavoriteFilter(grade, tab){
+  const charStates = {g5:g5State, g6:g6State, g6ii:g6iiState};
+  const wordStates = {g5:g5wordCtrl, g6:g6wordCtrl, g6ii:g6iiwordCtrl};
+  const filter = tab === 'word' ? wordStates[grade]().filter : charStates[grade]().filter;
+  syncFavoriteFilterToggle(`${grade}FavoriteFilterBtn`, filter);
+}
 function syncWritingModeToggle(grade, active){
   const button = document.getElementById('writingModeToggle');
   if(button.dataset.grade !== grade) return;
@@ -897,7 +899,7 @@ function enterMhj(){
   setStudySearch('mhj');
   hideWritingModeToggle();
   document.getElementById('volNav').classList.remove('hidden');
-  document.getElementById('tabbarRow').classList.remove('hidden');
+  document.getElementById('mhjTabControls').classList.remove('hidden');
   document.getElementById('panel-g5').classList.add('hidden');
   document.getElementById('panel-g6').classList.add('hidden');
   document.getElementById('panel-g6ii').classList.add('hidden');
@@ -910,7 +912,7 @@ function enterG5(){
   setStudySearch('g5');
   showWritingModeToggle('g5');
   document.getElementById('volNav').classList.add('hidden');
-  document.getElementById('tabbarRow').classList.add('hidden');
+  document.getElementById('mhjTabControls').classList.add('hidden');
   document.getElementById('panel-card').classList.add('hidden');
   document.getElementById('panel-quiz').classList.add('hidden');
   document.getElementById('panel-g6').classList.add('hidden');
@@ -929,7 +931,7 @@ function enterG6(){
   setStudySearch('g6');
   showWritingModeToggle('g6');
   document.getElementById('volNav').classList.add('hidden');
-  document.getElementById('tabbarRow').classList.add('hidden');
+  document.getElementById('mhjTabControls').classList.add('hidden');
   document.getElementById('panel-card').classList.add('hidden');
   document.getElementById('panel-quiz').classList.add('hidden');
   document.getElementById('panel-g5').classList.add('hidden');
@@ -948,7 +950,7 @@ function enterG6ii(){
   setStudySearch('g6ii');
   showWritingModeToggle('g6ii');
   document.getElementById('volNav').classList.add('hidden');
-  document.getElementById('tabbarRow').classList.add('hidden');
+  document.getElementById('mhjTabControls').classList.add('hidden');
   document.getElementById('panel-card').classList.add('hidden');
   document.getElementById('panel-quiz').classList.add('hidden');
   document.getElementById('panel-g5').classList.add('hidden');
@@ -966,6 +968,7 @@ document.querySelectorAll('#g5TabbarRow .tabbar-tab').forEach(t=>{
     const tab = t.dataset.g5tab;
     document.getElementById('g5-sub-char').classList.toggle('hidden', tab!=='char');
     document.getElementById('g5-sub-word').classList.toggle('hidden', tab!=='word');
+    syncGradeFavoriteFilter('g5', tab);
     if(tab === 'char') showWritingModeToggle('g5'); else hideWritingModeToggle();
     if(tab === 'word') enterG5WordTab();
   });
@@ -977,6 +980,7 @@ document.querySelectorAll('#g6TabbarRow .tabbar-tab').forEach(t=>{
     const tab = t.dataset.g6tab;
     document.getElementById('g6-sub-char').classList.toggle('hidden', tab!=='char');
     document.getElementById('g6-sub-word').classList.toggle('hidden', tab!=='word');
+    syncGradeFavoriteFilter('g6', tab);
     if(tab === 'char') showWritingModeToggle('g6'); else hideWritingModeToggle();
     if(tab === 'word') enterG6WordTab();
   });
@@ -987,9 +991,31 @@ document.querySelectorAll('#g6iiTabbarRow .tabbar-tab').forEach(t=>{
     const tab = t.dataset.g6iitab;
     document.getElementById('g6ii-sub-char').classList.toggle('hidden', tab!=='char');
     document.getElementById('g6ii-sub-word').classList.toggle('hidden', tab!=='word');
+    syncGradeFavoriteFilter('g6ii', tab);
     if(tab === 'char') showWritingModeToggle('g6ii'); else hideWritingModeToggle();
     if(tab === 'word') enterG6iiWordTab();
   });
+});
+function toggleGradeFavoriteFilter(grade){
+  const wordVisible = !document.getElementById(`${grade}-sub-word`).classList.contains('hidden');
+  if(wordVisible){
+    const wordStates = {g5:g5wordCtrl, g6:g6wordCtrl, g6ii:g6iiwordCtrl};
+    const wordSetters = {g5:g5wordSetFilter, g6:g6wordSetFilter, g6ii:g6iiwordSetFilter};
+    const filter = wordStates[grade]().filter === 'starred' ? 'all' : 'starred';
+    wordSetters[grade](filter);
+    return;
+  }
+  const charStates = {g5:g5State, g6:g6State, g6ii:g6iiState};
+  const charSetters = {
+    g5:filter => { g5Flipped = false; g5SetFilter(filter); },
+    g6:filter => { g6Flipped = false; g6SetFilter(filter); },
+    g6ii:filter => { g6iiFlipped = false; g6iiSetFilter(filter); }
+  };
+  const filter = charStates[grade]().filter === 'starred' ? 'all' : 'starred';
+  charSetters[grade](filter);
+}
+['g5', 'g6', 'g6ii'].forEach(grade => {
+  document.getElementById(`${grade}FavoriteFilterBtn`).addEventListener('click', () => toggleGradeFavoriteFilter(grade));
 });
 document.getElementById('pickMhj').addEventListener('click', enterMhj);
 document.getElementById('chooseVolLink').addEventListener('click', (e)=>{
@@ -1064,6 +1090,7 @@ function activateTab(name){
   document.querySelectorAll('#tabbarRow .tabbar-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
   document.getElementById('panel-card').classList.toggle('hidden', name!=='card');
   document.getElementById('panel-quiz').classList.toggle('hidden', name!=='quiz');
+  document.getElementById('mhjFavoriteFilterBtn').classList.toggle('hidden', name!=='card');
 }
 
 /* ---------- 데이터 로드 & 초기 렌더 ---------- */
@@ -1081,14 +1108,12 @@ function updateHiddenLink(){
   document.getElementById('hiddenLink').classList.toggle('hidden', hiddenCount===0);
 }
 
-document.querySelectorAll('#cardFilterRow .filter-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    cardFilter = btn.dataset.filter;
-    document.querySelectorAll('#cardFilterRow .filter-btn').forEach(b=>b.classList.toggle('active', b===btn));
-    studyCards = buildStudyDeck();
-    cardIdx = 0; flipped = false;
-    renderCardPanel();
-  });
+document.getElementById('mhjFavoriteFilterBtn').addEventListener('click', ()=>{
+  cardFilter = cardFilter === 'starred' ? 'all' : 'starred';
+  syncFavoriteFilterToggle('mhjFavoriteFilterBtn', cardFilter);
+  studyCards = buildStudyDeck();
+  cardIdx = 0; flipped = false;
+  renderCardPanel();
 });
 
 function renderCardPanel(){
@@ -1165,7 +1190,7 @@ let g5Flipped = false;
 function g5RenderCard(){
   g5EnsureDeck();
   const st = g5State();
-  document.querySelectorAll('#g5FilterRow .filter-btn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === st.filter));
+  syncFavoriteFilterToggle('g5FavoriteFilterBtn', st.filter);
   syncWritingModeToggle('g5', st.writingOnly);
   g5UpdateHiddenLink();
   const entry = GRADE5_ENTRIES.find(e => e.id === st.deck[st.pos]);
@@ -1205,9 +1230,6 @@ function g5RenderCard(){
 document.getElementById('g5Flashcard').addEventListener('click', ()=>{
   g5Flipped = !g5Flipped;
   g5RenderCard();
-});
-document.querySelectorAll('#g5FilterRow .filter-btn[data-filter]').forEach(btn => {
-  btn.addEventListener('click', () => { g5Flipped = false; g5SetFilter(btn.dataset.filter); });
 });
 document.getElementById('g5PrevBtn').addEventListener('click', () => {
   const st = g5State();
@@ -1323,7 +1345,7 @@ let g6Flipped = false;
 function g6RenderCard(){
   g6EnsureDeck();
   const st = g6State();
-  document.querySelectorAll('#g6FilterRow .filter-btn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === st.filter));
+  syncFavoriteFilterToggle('g6FavoriteFilterBtn', st.filter);
   syncWritingModeToggle('g6', st.writingOnly);
   g6UpdateHiddenLink();
   const entry = GRADE6_ENTRIES.find(e => e.id === st.deck[st.pos]);
@@ -1363,9 +1385,6 @@ function g6RenderCard(){
 document.getElementById('g6Flashcard').addEventListener('click', ()=>{
   g6Flipped = !g6Flipped;
   g6RenderCard();
-});
-document.querySelectorAll('#g6FilterRow .filter-btn[data-filter]').forEach(btn => {
-  btn.addEventListener('click', () => { g6Flipped = false; g6SetFilter(btn.dataset.filter); });
 });
 document.getElementById('g6PrevBtn').addEventListener('click', () => {
   const st = g6State();
@@ -1481,7 +1500,7 @@ let g6iiFlipped = false;
 function g6iiRenderCard(){
   g6iiEnsureDeck();
   const st = g6iiState();
-  document.querySelectorAll('#g6iiFilterRow .filter-btn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === st.filter));
+  syncFavoriteFilterToggle('g6iiFavoriteFilterBtn', st.filter);
   syncWritingModeToggle('g6ii', st.writingOnly);
   g6iiUpdateHiddenLink();
   const entry = GRADE6II_ENTRIES.find(e => e.id === st.deck[st.pos]);
@@ -1521,9 +1540,6 @@ function g6iiRenderCard(){
 document.getElementById('g6iiFlashcard').addEventListener('click', ()=>{
   g6iiFlipped = !g6iiFlipped;
   g6iiRenderCard();
-});
-document.querySelectorAll('#g6iiFilterRow .filter-btn[data-filter]').forEach(btn => {
-  btn.addEventListener('click', () => { g6iiFlipped = false; g6iiSetFilter(btn.dataset.filter); });
 });
 document.getElementById('g6iiPrevBtn').addEventListener('click', () => {
   const st = g6iiState();
@@ -1664,7 +1680,7 @@ function startG5WordSet(examNumber){
   ctrl.examNumber = examNumber;
   saveProgress();
   document.getElementById('g5wordSetLabel').textContent = `${examNumber}회`;
-  document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === ctrl.filter));
+  syncFavoriteFilterToggle('g5FavoriteFilterBtn', ctrl.filter);
   g5wordItems = g5wordActiveItems(examNumber, ctrl.filter);
   g5wordIdx = 0;
   g5wordFlipped = false;
@@ -1675,15 +1691,12 @@ function g5wordSetFilter(filter){
   const ctrl = g5wordCtrl();
   ctrl.filter = filter;
   saveProgress();
-  document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  syncFavoriteFilterToggle('g5FavoriteFilterBtn', filter);
   g5wordItems = g5wordActiveItems(ctrl.examNumber, filter);
   g5wordIdx = 0;
   g5wordFlipped = false;
   g5wordRenderCard();
 }
-document.querySelectorAll('#g5wordFilterRow .filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => g5wordSetFilter(btn.dataset.filter));
-});
 
 function g5wordCharBreakdown(word){
   return [...word].map(ch => {
@@ -1847,7 +1860,7 @@ function startG6WordSet(examNumber){
   ctrl.examNumber = examNumber;
   saveProgress();
   document.getElementById('g6wordSetLabel').textContent = `${examNumber}회`;
-  document.querySelectorAll('#g6wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === ctrl.filter));
+  syncFavoriteFilterToggle('g6FavoriteFilterBtn', ctrl.filter);
   g6wordItems = g6wordActiveItems(examNumber, ctrl.filter);
   g6wordIdx = 0;
   g6wordFlipped = false;
@@ -1858,15 +1871,12 @@ function g6wordSetFilter(filter){
   const ctrl = g6wordCtrl();
   ctrl.filter = filter;
   saveProgress();
-  document.querySelectorAll('#g6wordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  syncFavoriteFilterToggle('g6FavoriteFilterBtn', filter);
   g6wordItems = g6wordActiveItems(ctrl.examNumber, filter);
   g6wordIdx = 0;
   g6wordFlipped = false;
   g6wordRenderCard();
 }
-document.querySelectorAll('#g6wordFilterRow .filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => g6wordSetFilter(btn.dataset.filter));
-});
 
 function g6wordCharBreakdown(word){
   return [...word].map(ch => {
@@ -2032,7 +2042,7 @@ function startG6iiWordSet(examNumber){
   ctrl.examNumber = examNumber;
   saveProgress();
   document.getElementById('g6iiwordSetLabel').textContent = `${examNumber}회`;
-  document.querySelectorAll('#g6iiwordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === ctrl.filter));
+  syncFavoriteFilterToggle('g6iiFavoriteFilterBtn', ctrl.filter);
   g6iiwordItems = g6iiwordActiveItems(examNumber, ctrl.filter);
   g6iiwordIdx = 0;
   g6iiwordFlipped = false;
@@ -2043,15 +2053,12 @@ function g6iiwordSetFilter(filter){
   const ctrl = g6iiwordCtrl();
   ctrl.filter = filter;
   saveProgress();
-  document.querySelectorAll('#g6iiwordFilterRow .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  syncFavoriteFilterToggle('g6iiFavoriteFilterBtn', filter);
   g6iiwordItems = g6iiwordActiveItems(ctrl.examNumber, filter);
   g6iiwordIdx = 0;
   g6iiwordFlipped = false;
   g6iiwordRenderCard();
 }
-document.querySelectorAll('#g6iiwordFilterRow .filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => g6iiwordSetFilter(btn.dataset.filter));
-});
 
 function g6iiwordCharBreakdown(word){
   // 6급II 배정 225자 밖의 글자(하위 급수에서 이미 배운 글자)가 기출 단어에 다수
@@ -2400,6 +2407,7 @@ function activateGradeWordPanel(grade){
   document.querySelectorAll(`#${grade}TabbarRow .tabbar-tab`).forEach(tab => tab.classList.toggle('active', tab.dataset[`${grade}tab`] === 'word'));
   document.getElementById(`${grade}-sub-char`).classList.add('hidden');
   document.getElementById(`${grade}-sub-word`).classList.remove('hidden');
+  syncGradeFavoriteFilter(grade, 'word');
 }
 
 async function openSearchResult(item){
@@ -2493,7 +2501,7 @@ async function loadAndRender(expectedToken){
   }
 
   cardIdx = 0; flipped = false;
-  document.querySelectorAll('#cardFilterRow .filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.filter===cardFilter));
+  syncFavoriteFilterToggle('mhjFavoriteFilterBtn', cardFilter);
   renderCardPanel();
 
   quizIdx = 0; score = 0; answered = false;
